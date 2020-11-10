@@ -150,5 +150,27 @@ php -info
 ## 8- Configuration avancée
 ### [8A] Installez le service vsftp, et bien sûr, vérifiez qu’il est opérationnel. Qu’avez vous
 fait comme commande ?
-
+```bash
+yum install -y vsftpd #installation
+systemctl status vsftpd #vérification
+```
 ### [8B] Créez un compte utilisateur nommé ‘web’.
+```bash
+useradd web
+passwd web
+cd home/web
+mkdir www.campagne.sys www.montagne.sys www.glacier.sys www.sommet.sys
+```
+### [8C] Vérifiez que vous pouvez accéder en lecture/écriture a tous les répertoires présents dans le répertoire /home/web en utilisant un client ftp comme FileZilla. Donnez les permissions de /home/web ainsi que celles des dossiers précédemment créés
+
+## 9-Configuration réseau :
+### [9A] Configurer votre carte réseau avec l’IP fixe 172.16.xxx.5/24 et donnez le contenu du
+fichier.
+### [9B] A quoi sert la commande nmcli
+### [9C] A quoi sert le service NetworkManager
+### [9D] A quoi sert le fichier /etc/resolv.conf ?
+### [9E] Que devez-vous faire comme tests pour vérifier la connectivité de votre VM ?
+### [9F] Votre machine peut-elle joindre www.free.fr ? Quelle commande avez vous utilisez
+pour le vérifier ?
+### [9G] Votre VM peut-elle être jointe par l’un de vos collègues ? Si non, pourquoi ? Quels
+tests avez vous effectués ?
