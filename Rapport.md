@@ -166,11 +166,18 @@ mkdir www.campagne.sys www.montagne.sys www.glacier.sys www.sommet.sys
 ## 9-Configuration réseau :
 ### [9A] Configurer votre carte réseau avec l’IP fixe 172.16.xxx.5/24 et donnez le contenu du
 fichier.
+
 ### [9B] A quoi sert la commande nmcli
+nmcli sert à contrôler NetworkManager et signaler l'état du réseau
 ### [9C] A quoi sert le service NetworkManager
+Network-Manager est l'outil de gestion des connexions réseau, il permet la création et la configuration des accès à divers types de réseaux
 ### [9D] A quoi sert le fichier /etc/resolv.conf ?
+Ce fichier permet d'indiquer au système quels serveurs interroger pour résoudre un nom de domaine
 ### [9E] Que devez-vous faire comme tests pour vérifier la connectivité de votre VM ?
+Il suffit de ping un site, par exemple **ping 8.8.8.8**
 ### [9F] Votre machine peut-elle joindre www.free.fr ? Quelle commande avez vous utilisez
 pour le vérifier ?
+Oui cela fonctionne avec **ping www.free.fr**
 ### [9G] Votre VM peut-elle être jointe par l’un de vos collègues ? Si non, pourquoi ? Quels
 tests avez vous effectués ?
+
