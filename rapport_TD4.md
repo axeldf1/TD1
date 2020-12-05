@@ -47,13 +47,13 @@ Termine à coup sûr le processus
 ### [3H] Quel est le rôle de la commande nohup ?
 Permet de lancer un processus qui restera actif même après la déconnexion de l'utilisateur
 ### [3I] Quelles commandes vous permettent de passer un processus en arrière plan ? De le ramener en avant plan ? De le mettre en pause ?
-- **nohup command &** permet de lancer le processus en arrière plan et **bg <PID>** permet de le passer en arrière plan
+- **command &** permet de lancer le processus en arrière plan et **bg <PID>** permet de le passer en arrière plan
 - **fg <PID>** permet de le ramener en avant plan
 - **kill -STOP PID** permet de mettre en pause le processus
 
 ## 4- Gestion des processus
 ### [4A] Il existe deux approches pour passer le processus en « background » (tache de fond). Lesquelles ?
-**nohup ./randomgenerator &** permet de lancer le processus en arrière plan et **bg <PID>** permet de le passer en arrière plan
+**./randomgenerator &** permet de lancer le processus en arrière plan et **bg <PID>** permet de le passer en arrière plan
 ### [4B] Votre processus est en tache de fond ? Tapez la commande « clear » ? Qu’observez vous ?
 Le procesus est en fond et après **clear** le processus tourne encore
 ### [4C] Comment pouvez vous mettre le processus en pause ? Il existe deux approches, lequelles ?
@@ -67,3 +67,6 @@ Le numéro de processus est global tant dis que le numéro de tâche est utilis�
 ### [4G] Lancer le programme en tache de fond depuis un terminal ssh et déconnectez-vous du terminal. Le processus et il actif ? Comment avez vous vérifié?
 Le processus est en sleep, on peut vérifier avec la commande **htop -p <PID>**
 ### [4H] Comment pouvez vous lancez un processus qui restera actif même si vous fermez la session ? Il existe au moins deux solutions, lesquelles ?
+ Pour lancer un processus qui reste actif après la fermeture du terminal on peut faire :
+ - **nohup command**
+ - **screen -S LE_NOM_DU_SCREEN** puis on tape notre commande et on ferme le terminal
