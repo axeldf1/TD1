@@ -70,3 +70,38 @@ Le processus est en sleep, on peut vérifier avec la commande **htop -p <PID>**
  Pour lancer un processus qui reste actif après la fermeture du terminal on peut faire :
  - **nohup command**
  - **screen -S LE_NOM_DU_SCREEN** puis on tape notre commande et on ferme le terminal
+### [4I] Comment lancer randomgenerator avec une priorité plus faible ?
+**nice -n 0 ./randomgenerator**
+### [4J] Quelle commande vous permet de changer la priorité de randomgenerator ?
+ **renice +10 2396**
+ 
+## 5- Redirection de flux
+### [5A] Que fait la commande randomgenerator > rands.txt ?
+Cette commande est sensé écrire les résultats dans rands.txt au lieu de l'écrire dans la console, le fichier est écrasé si il existait déjà
+### [5B] Que fait la commande randomgenerator >> rands.txt ?
+Cette commande fait la même chose que la précédente à l'exception qu'elle n'écrase pas le fichier et écrit à la fin
+### [5C] Que fait la commande randomgenerator -i ?
+Permet à l'utilisateur de renseigner le nombre de chiffre à générer
+### [5D] Que fait la commande randomgenerator -i <<< "10"
+
+### [5E] Tapez la commande echo "20" > response.txt Que fait-elle ?
+Crée un fichier response.txt et écris 20 dedans, si le fichier existe il est écrasé
+### [5F] Que fait la commande randomgenerator -i << response.txt
+
+### [5G] Que fait la commande randomgenerator -i <<< "10" | sort -n
+
+### [5H] A quoi correspond les flux 0, 1, 2 (stdin, stdout, stderr) ?
+
+### [5I] Que fait la commande randomgenerator -i <<< "50" > data.txt &
+### [5J] Vous devez maintenant avoir un fichier nommé data.txt, que fait la commande cat data.txt | sort -n
+### [5K] Modifier le code source de RandomGenerator pour qu'il accepte l'option -n XXX, XXX étant le nombre de valeurs aléatoires désirées, et donnez le code.
+
+## 6- Création d'un processus en C
+La commande fork() permet de "forker" (cloner) le processus courant.
+### [6A] Quel intérêt a un processus de se 'forké' ? Dans quel TD précédent un processus est-il « forké » ? Pour qu'elles raisons ?
+### [6B] Quelles sont les particularités d'un processus « forké »
+### [6C] Quelle différence existe il entre un processus « forké » et un thread ?
+### [6D] Quelle est l'une des limites de l'utilisation de fork() ?
+### [6E] Quels problèmes peuvent poser les threads ?
+
+## 7- Utilisation de fork, wait, waitpid, sleep
