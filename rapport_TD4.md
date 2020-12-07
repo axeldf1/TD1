@@ -146,4 +146,12 @@ Si un programme alloue des processus en boucle, il risque de consommer toutes le
 - De nombreux threads bloqués pendant une longue période
 - Conflit de ressources partagées
 - Threads dont l'exécution s'éternise
+
 ## 7- Utilisation de fork, wait, waitpid, sleep
+### [7A] Que donne les commandes ps et pstree pendant l’exécution du programme ?
+
+### [7B] Observez l’état des processus.Que se passe-t-il ? Corriger le code du processus père pour que les processus se terminent correctement.
+### [7C] Modifiez le code précédent pour que les fils affichent "Je suis le fils numero n ". La valeur de n est le numéro d'ordre de création du fils. Le fils doit aussi affiché sont PID, ainsi que le PID du père.
+### [7D] Modifiez le programme précédent pour qu'il y ait toujours le même nombre d'enfants en fonction.
+### [7E] Créez une variable globale. Chaque fils devra afficher la variable globale avant de la modifier de facon aléatoire et afficher la nouvelle valeur, juste avant de terminer son activité. Qu'observez vous ? Est-ce cohérent avec les questions de la partie 6 ?
+## 8- Exécution de routines de terminaison
