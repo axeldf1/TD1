@@ -77,31 +77,73 @@ Le processus est en sleep, on peut vérifier avec la commande **htop -p <PID>**
  
 ## 5- Redirection de flux
 ### [5A] Que fait la commande randomgenerator > rands.txt ?
-Cette commande est sensé écrire les résultats dans rands.txt au lieu de l'écrire dans la console, le fichier est écrasé si il existait déjà
+Cette commande est sensé écrire les résultats dans rands.txt au lieu de l'écrire dans la console, le fichier est écrasé si il existait déjà, cependant rien ne se passe dans notre cas
 ### [5B] Que fait la commande randomgenerator >> rands.txt ?
 Cette commande fait la même chose que la précédente à l'exception qu'elle n'écrase pas le fichier et écrit à la fin
 ### [5C] Que fait la commande randomgenerator -i ?
 Permet à l'utilisateur de renseigner le nombre de chiffre à générer
 ### [5D] Que fait la commande randomgenerator -i <<< "10"
-
+Permet de générer 10 chiffres
 ### [5E] Tapez la commande echo "20" > response.txt Que fait-elle ?
 Crée un fichier response.txt et écris 20 dedans, si le fichier existe il est écrasé
-### [5F] Que fait la commande randomgenerator -i << response.txt
-
+### [5F] Que fait la commande randomgenerator -i < response.txt
+Permet de générer le nombre de chiffre inscrit dans "response.txt"
 ### [5G] Que fait la commande randomgenerator -i <<< "10" | sort -n
-
+Génère 10 chiffres et les tri par odres croissant
 ### [5H] A quoi correspond les flux 0, 1, 2 (stdin, stdout, stderr) ?
-
+- stdin : Entrée standard
+- stdout : Objet de flux de sortie standard
+- stderr : Erreur standard
 ### [5I] Que fait la commande randomgenerator -i <<< "50" > data.txt &
+Permet de générer 50 chiffres et de les inscrire dans "data.txt"
 ### [5J] Vous devez maintenant avoir un fichier nommé data.txt, que fait la commande cat data.txt | sort -n
+Permet de trier les chiffres de "data.txt" dans l'ordre croissant
 ### [5K] Modifier le code source de RandomGenerator pour qu'il accepte l'option -n XXX, XXX étant le nombre de valeurs aléatoires désirées, et donnez le code.
+```C
+int main(int argc, char** argv) {
+    char oc;
+    int repet = -1;
 
+    while ((oc = getopt(argc, argv, "ian:")) != -1) {
+        switch (oc) {
+            case 'a':
+                printf("boummm \n");
+                break;
+            case 'i':
+                printf("nombre de valeur : ");
+                scanf("%i", &repet);
+                break;
+            case 'n':
+                repet = atoi(optarg);
+            	break;
+            case '?':
+            default:
+                break;
+        }
+    }
+
+    while (repet-- != 0 ) {
+        printf("%d\n", rand()%1000);
+        usleep(500000);
+    }
+    return (EXIT_SUCCESS);
+}
+```
 ## 6- Création d'un processus en C
 La commande fork() permet de "forker" (cloner) le processus courant.
 ### [6A] Quel intérêt a un processus de se 'forké' ? Dans quel TD précédent un processus est-il « forké » ? Pour qu'elles raisons ?
+L'intérêt est de pouvoir faire une commande en parallèle, dans le TD 2 MariaDB est un fork de MySQL pour sécuriser l'accès futur à MySQL et son développement ultérieur
 ### [6B] Quelles sont les particularités d'un processus « forké »
+- le processsus fils hérite de l’environnement de son père (environement d’exécution, variables-système)
+- en fait il reçoit une copie
+- à l’exception de son identité pid et de celle de son père ppid
 ### [6C] Quelle différence existe il entre un processus « forké » et un thread ?
+Un thread partage la même mémoire virtuelle, tandis que les processus forké s’exécutent dans des espaces mémoire distincts
 ### [6D] Quelle est l'une des limites de l'utilisation de fork() ?
+Un processsus, un ulilisateur, mais aussi le système ont un nombre limité de processus...
+Si un programme alloue des processus en boucle, il risque de consommer toutes les resources (en processus) et de ne même plus pouvoir allouer de processus pour tuer le programme fautif
 ### [6E] Quels problèmes peuvent poser les threads ?
-
+- De nombreux threads bloqués pendant une longue période
+- Conflit de ressources partagées
+- Threads dont l'exécution s'éternise
 ## 7- Utilisation de fork, wait, waitpid, sleep
