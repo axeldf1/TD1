@@ -149,9 +149,69 @@ Si un programme alloue des processus en boucle, il risque de consommer toutes le
 
 ## 7- Utilisation de fork, wait, waitpid, sleep
 ### [7A] Que donne les commandes ps et pstree pendant l’exécution du programme ?
-
+```bash
+ PID TTY          TIME CMD
+   2876 pts/1    00:00:00 bash
+   2916 pts/1    00:00:00 test
+   2917 pts/1    00:00:00 test
+   2918 pts/1    00:00:00 test
+   2920 pts/1    00:00:00 test
+   2921 pts/1    00:00:00 test
+   2922 pts/1    00:00:00 test
+   2923 pts/1    00:00:00 test
+   2929 pts/1    00:00:00 ps
+```
 ### [7B] Observez l’état des processus.Que se passe-t-il ? Corriger le code du processus père pour que les processus se terminent correctement.
-### [7C] Modifiez le code précédent pour que les fils affichent "Je suis le fils numero n ". La valeur de n est le numéro d'ordre de création du fils. Le fils doit aussi affiché sont PID, ainsi que le PID du père.
-### [7D] Modifiez le programme précédent pour qu'il y ait toujours le même nombre d'enfants en fonction.
-### [7E] Créez une variable globale. Chaque fils devra afficher la variable globale avant de la modifier de facon aléatoire et afficher la nouvelle valeur, juste avant de terminer son activité. Qu'observez vous ? Est-ce cohérent avec les questions de la partie 6 ?
-## 8- Exécution de routines de terminaison
+```C
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+#include <sys/types.h>
+
+static int global_int = 42;
+
+void ChildProcess(int child_id)
+{
+    int time_to_sleep = rand() % 110 + 20;
+    sleep(time_to_sleep);
+    execlp("/home/student/Desktop/RANDOM/ICS_RandomGenerator/random.c","randomG",NULL );
+    
+    printf("Je suis le fils numéro %d PID %d et parent PID %d\n", child_id, getpid(), getppid());
+    printf("variable globale : %d \n",global_int);
+    global_int = rand();
+    printf("variable globale : %d \n",global_int);
+    
+    exit(0);
+}
+
+void exit_handler(int ev, void *arg)
+{
+    fprintf(stdout, "bye \n");
+}
+
+int main(int argc, char **argv)
+{
+    atexit(exit_handler);
+    int repet;
+    struct timespec tp;
+    clockid_t clk_id;
+    printf("nombre de valeur : ");
+    scanf("%i", &repet);
+    
+    if (repet < 10) {
+        for (int i = 0; i < repet; i++)
+        {
+            clock_gettime(clk_id, &tp); 
+            srand(tp.tv_nsec);
+            if (fork() == 0) 
+            {
+                ChildProcess(i);
+            }
+        }
+    }
+    
+    return (EXIT_SUCCESS);
+}
+```
+
