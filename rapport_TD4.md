@@ -1,14 +1,3 @@
-La valeur de l'UID est comprise entre les constantes UID_MIN et UID_MAX du fichier /etc/login.defs
-
-SET - UID ==> chmod +s fichier
-
-/sbin/init, /etc/init puis /bin/init
-
-R pour running
-S pour sleeping
-T pour stopped
-Z pour … zombie
-
 # TD4 – Programmation C Système / Les processus
 ## 3- Commandes de base
 ### [3A] Quel est le rôle des commandes suivantes
