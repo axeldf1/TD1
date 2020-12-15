@@ -1,68 +1,75 @@
-*PRATOUSSY Martin - 3ICS G2*
-
-# TD5 - Programmation C Système
-
----
-
-**[1A]** -	
-```
+# TD5 – Programmation C Système 2 : Communication inter-processus
+## 1 Signaux
+```C
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/wait.h>
 #include <sys/types.h>
-#include <signal.h>
-#include <string.h>
-#include <time.h>
+#include <unistd.h>
 
-#define NB_CHILD 5
-
-void sigaction_handler(){
-    printf("Hello from %d\n", getpid());
+void sigusr1(){
+    signal(SIGHUP, sigusr1);
+    printf("Hello from PID %d \n", getpid());
 }
 
-void child_process(){  
-    struct sigaction new_action;
-    memset(&new_action, '\0', sizeof(new_action));
-    new_action.sa_handler = sigaction_handler;
-    new_action.sa_flags = 0;
-    sigaction(SIGUSR1, &new_action, NULL);
+void sigint(){
+    signal(SIGINT, sigint);
+    printf("Child with PID : %d SIGINT \n", getpid());
+}
+
+void ProcessChild(int id){
+    printf("ID : %d - child PID : %d - PPID : %d \n", id, getpid(), getppid());
+    
+    signal(SIGUSR1, sigusr1);
+    signal(SIGINT, sigint);
+    
     while(1);
     exit(EXIT_SUCCESS);
 }
 
-int main(int argc, char const *argv[]) {
-
-    pid_t pid;
-    pid_t id[NB_CHILD];
-    for (int i = 0; i < NB_CHILD; i++) {
-        pid = fork();
-        id[i] = pid;
-        if(pid == 0) {
-            child_process();
+void main(){
+    for (int i = 0; i < 5; i++){        
+        if (fork() == 0){
+            ProcessChild(i);
+        }
+        
+        sleep(1);
+        
+        if (childProcess > 0 && i == 4){
+        
+            for (int j = 0; j < 30; j++){
+                printf("msg nb : %d \n", j);
+                signal(SIGUSR1,sigusr1);
+                kill(childProcess - rand() % 5, SIGUSR1);
+                sleep(1);
+            }
+            
+            for (int h = 0; h < 5; h++){
+                printf("SINGINT  %d \n", h);
+                signal(SIGINT, sigint);
+                kill(childProcess - h, SIGINT);
+                sleep(1);
+            }
         }
     }
-
-    for (int i = 0; i < 30; i++) {
-        srand(time(NULL));
-        int id_to_send = rand()%NB_CHILD;
-        kill(id[id_to_send], SIGUSR1);
-        sleep(1);
-    }
-
-    for (int i = 0; i < 5; i++) kill(id[i], SIGINT);
-    
-    return (EXIT_SUCCESS);
 }
 ```
 
-**[1B]** -
-La fonction **signal** est fortement déconseillée car elle ne bloque pas l'arrivée d'autres signaux pendant l'exécution du gestionnaire. Elle réinitialise aussi l'action du signal au signal par défaut (SIG_DFL), ce qui ouvre une fenêtre de vulnérabilité au moment de la réinstallation du gestionnaire. Le comportement du signal est aussi différent selon les systèmes.
+### [1B] Il existe une fonction signal qui permet de faire presque la même chose que sigaction. Pourtant son utilisation est fortement déconseillé. Pourquoi ?
+La fonction **signal** est similaire à **sigaction** mais elle est déconseillée car elle ne bloque pas l'arrivée d'autres signaux. De plus, elle réinitialise l'action du signal, ce qui rend vulnérable au moment de la réinstallation du gestionnaire
 
----
-
-**[2A]** -
-```c
+## 2- Mémoire partagée
+### [2A] En vous basant le fichier TD5-shared_memory.c et en réutilisant le code du TD sur les processus (ou celui de l’exercice précédent) vous devez :
+- Ecrire un programme qui se « forke » (un seul processus fils)
+- Le processus parent devra afficher un nombre aléatoire compris entre 0 et 100 et l’écrire
+dans la mémoire partagée.
+- Après-quoi le processus parent devra envoyer un signal SIGUSR1 au processus fils pour lui
+signaler que des données sont disponibles dans la mémoire partagée.
+- Le processus fils devra lire les données disponibles et afficher son pid en même temps que
+les données lues.
+- Après l’envoi de 5 valeurs aléatoires au processus fils, le processus parent mettra fin au
+processus fils, et se terminera.
+```C
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -77,19 +84,21 @@ La fonction **signal** est fortement déconseillée car elle ne bloque pas l'arr
 int* shared_memory;
 int segment_id;
 
-void sigaction_handler() {    
-    printf("Enfant %d, le mémoire partagée contient la valeur %d\n", getpid(), *shared_memory);
+void sigaction_handler(){    
+    printf("Enfant PID %d, mémoire partagée : %d\n", getpid(), *shared_memory);
 }
 
 void child_process(){  
-    struct sigaction new_action;
-    memset(&new_action, '\0', sizeof(new_action));
-    new_action.sa_handler = sigaction_handler;
-    new_action.sa_flags = 0;
-    if(sigaction(SIGUSR1, &new_action, NULL) < 0) {
-        printf("tenga tenga");
+    struct sigaction action;
+    memset(&action, '\0', sizeof(action));
+    action.sa_handler = sigaction_handler;
+    action.sa_flags = 0;
+    
+    if(sigaction(SIGUSR1, &action, NULL) < 0){
+        printf("sigaction");
         exit(EXIT_SUCCESS);
     }
+    
     while(1);
     exit(EXIT_SUCCESS);
 }
@@ -115,16 +124,15 @@ int main(int argc, char const *argv[]) {
     fn_shared_memory();
 
     pid_t pid;
-    pid = fork();
     pid_t id = pid;
 
-    if(pid == 0) {
+    if(fork() == 0) {
         child_process();
     }
 
     else if (pid > 0) {
         for(int i = 0; i < 5; i++) {
-            int num = rand()%100;
+            int num = rand() % 100;
             *shared_memory = num;
             kill(id, SIGUSR1);
         }
@@ -139,10 +147,8 @@ int main(int argc, char const *argv[]) {
     return (EXIT_SUCCESS);
 }
 ```
-
----
-
-**[3A]** -
+## 3- Mémoire mappée
+### [3A] Pour mettre en correspondance un fichier ordinaire avec la mémoire d’un processus, utilisez l’appel mmap. Cette fonction accepte 6 paramètres. Donnez le rôle de chacun des paramètres avec les valeurs possibles
 La fonction **mmap** prend 6 paramètres :
 - ```void *addr``` : adresse de départ de la nouvelle projection
 - ```size_t length``` : longueur de la projection
@@ -151,15 +157,15 @@ La fonction **mmap** prend 6 paramètres :
 - ```int fd``` : descripteur de fichier
 - ```off_t offset``` : position offset dans le fichier (doit être un multiple de la taille de page)
 
-**[3B]** -
+### [3B] Que signifie la ligne « PROT_READ | PROT_WRITE » dans le fichier reader.c
 ```PROT_READ | PROT_WRITE``` sont les valeurs passées à l'argument *prot* dans la fonction **mmap**, ils signifient qu'on peut lire et écrire dans la zone mémoire.
 
-**[3C]** -
+### [3C] A quoi sert le drapeau MAP_SHARED ?
 ```MAP_SHARED``` est la valeur passée à l'argument *flag* dans la fonction **mmap**, il signifie que les modifications de la projection sont visibles par tous les autres processus qui projettent ce fichier.
 
-**[3D]** -
+### [3D] Utilisez les fichiers TD5-reader.c et TD5-writer.c pour écrire deux programmes. Le premier programme écrira sous forme binaire le contenu d’un tableau d’entiers de 5 valeurs aléatoires dans la mémoire mappée. Le second programme devra lire ces valeurs depuis la mémoire mappée, et les afficher.
 **writer.c** :
-```c
+```C
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -204,7 +210,7 @@ int main(char argc, char const *argv[]) {
 }
 ```
 **reader.c** :
-```c
+```C
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -239,13 +245,16 @@ int main(char argc, char const *argv[]) {
 }
 ```
 
-**[3E]** -
-TODO
+### [3E] Que se passe-t-il si le fichier de « mapping » se trouve sur un partage réseau NTFS ou SMB ? Quelles perspectives entrevoyez vous dans l’usage d’une mémoire mappé par rapport a une mémoire partagée ?
 
----
-
-**[4A]** -
-```c
+## 4- Tubes (aka « pipes »)
+### [4A] Vous devez écrire un programme qui se « forke » :
+- Le processus parent devra envoyer « n » valeurs aléatoires comprises entre 0 et 9 au
+processus fils a travers un tube. La valeur de « n » est comprise entre 5 et 20.
+- Le processus fils devra lire les toutes les valeurs qui lui sont transmises, calculer
+leurs somme et quitter.
+- Le processus parent doit se terminer lorsque le processus fils a fini sa tache.
+```C
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -302,19 +311,17 @@ int main(int argc, char const *argv[]) {
     return(EXIT_SUCCESS);
 }
 ```
-
-**[4B]** -
+### [4B] Quelle est le rôle/intérêt de la commande dup2 ?
 La fonction **dup2** prend en paramètres *oldfd* et *newfd*, elle permet de créer une copie du descripteur de fichier *oldfd* dans le nouveau descripteur de fichier spécifié par *newfd*. Les deux descripteurs font référence à la même description de fichier ouvert. 
 
-**[4C]** -
+### [4C] A quoi servent les commandes popen et pclose ?
 - **popen** : engendre un processus en créant un pipe, en exécutant un fork et e, invoquant le shell. Il prend 2 arguments, *const char *commande* avec la commande à exécuter et *const char *type* qui spécifie si l'ouverture se fait en écriture ou en lecture.
 - **pclose** : renvoie l"état de sortie de la commande exécutée lorsque le processus correspondant se termine.
+## 5- Tubes nommés (FIFO, aka « named pipe »)
+### [5A] Vous devez écrire un premier programme appelé send_rand qui écrit « n » valeurs aléatoires dans un tube nommé. Ce programme prendra en argument le nom du tube, et l'option -n qui sera suivi du nombre de valeurs aléatoires a envoyer dans le tube. Ce programme devra créer le tube dans le répertoire /tmp si celui-ci n'existe pas déjà.
 
----
-
-**[5A]** -
 Erreur lors de l'écriture dans le tube.
-```c
+```C
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -364,10 +371,9 @@ int main(int argc, char const *argv[]) {
     return(EXIT_SUCCESS);
 }
 ```
-
-**[5B]** -
+### [5B] Le second programme appelé get_rand lira toutes les valeurs présentes dans le tube, et affichera la moyenne des valeurs avant de quitter.
 Rien n'est lu dans le tube car **send_rand** ne parvient pas à y écrire.
-```c
+```C
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -397,9 +403,7 @@ int main(int argc, char const *argv[]) {
     return(EXIT_SUCCESS);
 }
 ```
-
----
-
+## 6- Socket
 **[6A]** -
 TODO
 
