@@ -54,7 +54,6 @@ void main(){
     }
 }
 ```
-
 ### [1B] Il existe une fonction signal qui permet de faire presque la même chose que sigaction. Pourtant son utilisation est fortement déconseillé. Pourquoi ?
 La fonction **signal** est similaire à **sigaction** mais elle est déconseillée car elle ne bloque pas l'arrivée d'autres signaux. De plus, elle réinitialise l'action du signal, ce qui rend vulnérable au moment de la réinstallation du gestionnaire
 
@@ -84,10 +83,6 @@ processus fils, et se terminera.
 int* shared_memory;
 int segment_id;
 
-void sigaction_handler(){    
-    printf("Enfant PID %d, mémoire partagée : %d\n", getpid(), *shared_memory);
-}
-
 void child_process(){  
     struct sigaction action;
     memset(&action, '\0', sizeof(action));
@@ -103,16 +98,22 @@ void child_process(){
     exit(EXIT_SUCCESS);
 }
 
+void sigaction_handler(){    
+    printf("Enfant PID %d, mémoire partagée : %d\n", getpid(), *shared_memory);
+}
+
 void fn_shared_memory(){
     segment_id = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+    
     if (segment_id < 0) {
-        printf("*** shmget error (server) ***\n");
+        printf("error : shmget\n");
         exit(EXIT_FAILURE);
     }
 
     shared_memory = (int*)shmat(segment_id, NULL, 0);
-    if ((int*)shared_memory == -1) {
-        printf("*** shmat error (server) ***\n");
+    
+    if (shared_memory == -1) {
+        printf("error : shmat\n");        
         exit(EXIT_FAILURE);
     }
 }
@@ -120,27 +121,20 @@ void fn_shared_memory(){
 int main(int argc, char const *argv[]) {
 
     srand(time(NULL));
-
     fn_shared_memory();
-
     pid_t pid;
     pid_t id = pid;
 
     if(fork() == 0) {
         child_process();
-    }
-
-    else if (pid > 0) {
+    }else if (pid > 0) {
         for(int i = 0; i < 5; i++) {
             int num = rand() % 100;
             *shared_memory = num;
             kill(id, SIGUSR1);
         }
         kill(id, SIGINT);
-    }
-
-    else {
-        printf("*** Fork error ***");
+    }else {
         exit(EXIT_FAILURE);
     }
 
@@ -149,22 +143,21 @@ int main(int argc, char const *argv[]) {
 ```
 ## 3- Mémoire mappée
 ### [3A] Pour mettre en correspondance un fichier ordinaire avec la mémoire d’un processus, utilisez l’appel mmap. Cette fonction accepte 6 paramètres. Donnez le rôle de chacun des paramètres avec les valeurs possibles
-La fonction **mmap** prend 6 paramètres :
-- ```void *addr``` : adresse de départ de la nouvelle projection
-- ```size_t length``` : longueur de la projection
-- ```int prot``` : protection mémoire que l'on désire pour cette projection
-- ```int flags``` : détermine si les modifications de la projection sont visibles par les autres processus projetant la même région et si les modifications sont appliquées au fichier sous-jacent
-- ```int fd``` : descripteur de fichier
-- ```off_t offset``` : position offset dans le fichier (doit être un multiple de la taille de page)
+
+- **void *addr** : adresse de la nouvelle projection
+- **size_t length** : longueur de la projection
+- **int prot** : protection mémoire de la projection
+- **int flags** : détermine si les modifications de la projection sont visibles par les autres processus projetant la même région 
+- **int fd** : descripteur de fichier
+- **off_t offset** : position offset dans le fichier
 
 ### [3B] Que signifie la ligne « PROT_READ | PROT_WRITE » dans le fichier reader.c
-```PROT_READ | PROT_WRITE``` sont les valeurs passées à l'argument *prot* dans la fonction **mmap**, ils signifient qu'on peut lire et écrire dans la zone mémoire.
+Cela permet de lire et d'écrire dans la zone mémoire
 
 ### [3C] A quoi sert le drapeau MAP_SHARED ?
-```MAP_SHARED``` est la valeur passée à l'argument *flag* dans la fonction **mmap**, il signifie que les modifications de la projection sont visibles par tous les autres processus qui projettent ce fichier.
+Cela permet les modifications de la projection qui seront visibles par tous les autres processus qui projettent ce fichier
 
 ### [3D] Utilisez les fichiers TD5-reader.c et TD5-writer.c pour écrire deux programmes. Le premier programme écrira sous forme binaire le contenu d’un tableau d’entiers de 5 valeurs aléatoires dans la mémoire mappée. Le second programme devra lire ces valeurs depuis la mémoire mappée, et les afficher.
-**writer.c** :
 ```C
 #include <stdlib.h>
 #include <stdio.h>
@@ -186,13 +179,17 @@ int writer(char *file) {
 
     int fd;
     int* file_memory;
+    
     srand(time(NULL));
+    
     fd = open(file, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     lseek(fd, FILE_LENGTH + 1, SEEK_SET);
     write(fd, " ", 1);
     lseek(fd, 0, SEEK_SET);
+    
     file_memory = mmap(0, FILE_LENGTH, PROT_WRITE, MAP_SHARED, fd, 0);
     close(fd);
+    
     for (int i = 0; i < NB_VALUES; i++) {
         file_memory[i] = random_range(-100, 100);
     }
@@ -209,7 +206,7 @@ int main(char argc, char const *argv[]) {
     return(EXIT_SUCCESS);
 }
 ```
-**reader.c** :
+
 ```C
 #include <stdlib.h>
 #include <stdio.h>
@@ -227,11 +224,14 @@ int reader(char *file) {
     int integer;
 
     fd = open(file, O_RDWR, S_IRUSR | S_IWUSR);
+    
     file_memory = mmap(0, FILE_LENGTH, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     close(fd);
+    
     for (int i = 0; i < NB_VALUES; i++) {
         printf(" valeur : %d\n ", file_memory[i]);
     }
+    
     return 0;
 }
 
@@ -266,14 +266,18 @@ leurs somme et quitter.
 int pipe_fds[2];
 
 void child_process() {
-    int pipevalues;
-    int sum = 0;
+    int pipeValues;
+    int S = 0;
+    
     close(pipe_fds[1]);
-    while(read(pipe_fds[0], &pipevalues, sizeof(pipevalues)) != 0) {
-        sum += pipevalues;
+    
+    while(read(pipe_fds[0], &pipeValues, sizeof(pipeValues)) != 0) {
+        S += pipeValues;
     }
-    printf("Somme des valeurs de la pipe : %d\n", sum);
+    
+    printf("Somme des valeurs : %d\n", S);
     close(pipe_fds[0]);
+    
     exit(EXIT_SUCCESS);    
 }
 
@@ -285,26 +289,24 @@ int main(int argc, char const *argv[]) {
         printf("*** Pipe error ***");
         exit(EXIT_FAILURE);
     }
-
-    pid_t pid = fork();
-
-    if (pid == -1) {
+    
+    if (fork() == -1) {
         printf("*** Fork error ***");
         exit(EXIT_FAILURE);
-    }
-    else if (pid == 0) {
+    }else if (fork() == 0) {
         sleep(3);
         child_process();
-    }
-    else {
+    }else {
         close(pipe_fds[0]);
         sleep(1);
         int n = rand() % 16 + 5;
+        
         for (int i = 0; i < n; i++) {
-            int randomnumber = rand() % 9;
-            printf("Random number : %d\n", randomnumber);
-            write(pipe_fds[1], &randomnumber, sizeof(randomnumber));
+            int randN = rand() % 9;
+            printf("Valeur : %d\n", randN);
+            write(pipe_fds[1], &randN, sizeof(randN));
         }
+        
         close(pipe_fds[1]);
     }
     
@@ -312,15 +314,15 @@ int main(int argc, char const *argv[]) {
 }
 ```
 ### [4B] Quelle est le rôle/intérêt de la commande dup2 ?
-La fonction **dup2** prend en paramètres *oldfd* et *newfd*, elle permet de créer une copie du descripteur de fichier *oldfd* dans le nouveau descripteur de fichier spécifié par *newfd*. Les deux descripteurs font référence à la même description de fichier ouvert. 
+Cette commande permet de créer une copie du descripteur de fichier dans le nouveau descripteur, on a donc 2 référence à la même description de fichier ouvert.
 
 ### [4C] A quoi servent les commandes popen et pclose ?
-- **popen** : engendre un processus en créant un pipe, en exécutant un fork et e, invoquant le shell. Il prend 2 arguments, *const char *commande* avec la commande à exécuter et *const char *type* qui spécifie si l'ouverture se fait en écriture ou en lecture.
-- **pclose** : renvoie l"état de sortie de la commande exécutée lorsque le processus correspondant se termine.
+- **popen** : ouvre un processus en créant un pipe, forkant et invoquant le shell
+- **pclose** : termine le processus et renvoie l'état de sortie
+
 ## 5- Tubes nommés (FIFO, aka « named pipe »)
 ### [5A] Vous devez écrire un premier programme appelé send_rand qui écrit « n » valeurs aléatoires dans un tube nommé. Ce programme prendra en argument le nom du tube, et l'option -n qui sera suivi du nombre de valeurs aléatoires a envoyer dans le tube. Ce programme devra créer le tube dans le répertoire /tmp si celui-ci n'existe pas déjà.
 
-Erreur lors de l'écriture dans le tube.
 ```C
 #include <stdlib.h>
 #include <stdio.h>
@@ -336,15 +338,13 @@ extern char* optarg;
 int main(int argc, char const *argv[]) {
 
     srand(time(NULL));
-
-    int fp = open(PIPE_PATH, O_RDWR, S_IRUSR | S_IWUSR);
+    int fp = open(PIPE_PATH, O_RDWR, S_IRUSR | S_IWUSR), c, n;
 
     if (mkfifo(PIPE_PATH, S_IRWXU | 0666) == -1) {
-        printf("*** FIFO error ***");
+        printf("error : FIFO");
         exit(EXIT_FAILURE);
     }
-
-    int c, n;
+    
     while ((c = getopt(argc, argv, "n:")) != -1) {
         switch (c) { 
         case 'n':
@@ -359,13 +359,16 @@ int main(int argc, char const *argv[]) {
     }
 
     int* values = malloc(sizeof(int)*n);
+    
     for (int i = 0; i < n; i++) {
         values[i] = rand() % 100;
-        printf("Random number : %d\n", values[i]);
+        printf("Valeur : %d\n", values[i]);
     }
+    
     if (write(fp, values, sizeof(int)*n) == -1) {
-        printf("*** Write error ***");
+        printf("error : Write");
     }
+    
     close(fp);
 
     return(EXIT_SUCCESS);
@@ -390,22 +393,18 @@ int main(int argc, char const *argv[]) {
     fp = fopen(PIPE_PATH, "r");
 
     int value = 0, average, i = 1;
+    
     while (read(fp, &value, sizeof(value)) != 0) {
         value += value;
         i++;
     }
+    
     average /= i;
 
-    printf("Moyenne des valeurs : %d\n", average);
-    
+    printf("Moyenne des valeurs : %d\n", average);    
     fclose(fp);
 
     return(EXIT_SUCCESS);
 }
 ```
 ## 6- Socket
-**[6A]** -
-TODO
-
-**[6B]** -
-TODO
