@@ -12,10 +12,12 @@
 #include <fcntl.h>
 
 void main() {
-	 
-
+	int fd = open("/dev/random", O_RDONLY), values[5];
+	read(fd, &values, sizeof values);
+	close(fd);
+	
 	for (int i = 0; i < 5; i++) {
-			printf("Valeur aléatoire %d : %ld \n", i, values[i]);
+		printf("Valeur aléatoire %d : %ld \n", i, values[i]);
 	}
 }
 ```
@@ -148,24 +150,144 @@ On observe que cette valeur est plus grande qu'un byte, elle est donc sauvegard�
 ### [7D] De même, créez un programme qui enregistre la valeur 0x4142434451525354L dans un fichier, en utilisant les fonctions précédentes. Affichez la valeur avec un printf en décimal et hexadécimal ? Que contient le fichier binaire ?
 ### [7E] Enregistrez la valeur précédente dans un fichier en utilisant la fonction fprintf. Que constatez-vous ?
 ### [7F] Quelle est la différence essentielle entre un fichier binaire et un fichier texte ?
-### [7G] Que pouvez-vous dire du principe 'little endian' et 'big endian' ?
-### [7H] A quelle groupe appartiennent les processeurs de la famille des Intel/AMD ?
-### [7I] Donnez un modèle de processeur appartenant a l'autre groupe.
-### [7J] Il existe d'autres fonctions permettant de lire et d’écrire dans un fichier, qui sont respectivement fread et fwrite. Quelles sont les différences entre read et fread ou write et fwrite ?
-### [7K] Quelles informations importantes pouvez vous tirer du code précédent ?
-### [7L] En utilisant fwrite, écrire un programme qui enregistre 100 valeurs (de 0 a 100) de
-type int en binaire dans un fichier et les affiche simultanément. Que pouvez vous observer dans le fichier ?
-### [7M] Écrire un second programme qui lit les valeurs précédentes du fichier et les affiche ?
+En informatique, un fichier binaire est un fichier qui n'est pas un fichier texte. De nombreux formats de fichiers binaires stockent une partie de leurs données sous forme de texte (une suite de caractères), le reste servant à interpréter, formater ou afficher ce texte
 
+### [7G] Que pouvez-vous dire du principe 'little endian' et 'big endian' ?
+C'est l'ordre des octets pour les entiers de 16 32 ou 64 bits. est reference par une adresse memoire. C'est l'adresse de l'octet de poids FAIBLE pour le LITTLE ENDIAN, l'octet suivant est l'octet de poids fort
+
+### [7H] A quelle groupe appartiennent les processeurs de la famille des Intel/AMD ?
+Little Endian
+
+### [7I] Donnez un modèle de processeur appartenant a l'autre groupe.
+Processeur motorola et spark
+
+### [7J] Il existe d'autres fonctions permettant de lire et d’écrire dans un fichier, qui sont respectivement fread et fwrite. Quelles sont les différences entre read et fread ou write et fwrite ?
+fprintf : obligé d'écrire champ par champ  
+fwrite : une seule ligne suffirait pour sauvegarder et pour charger  
+  
+fwrite et fread sont adaptés à l'écriture de fichier contrairement aux autres
+### [7K] Quelles informations importantes pouvez vous tirer du code précédent ?
+
+### [7L] En utilisant fwrite, écrire un programme qui enregistre 100 valeurs (de 0 a 100) de type int en binaire dans un fichier et les affiche simultanément. Que pouvez vous observer dans le fichier ?
+```C
+ #include <stdio.h>
+    #include <stdlib.h>
+
+    int main(void) {
+
+        FILE* F;
+        F = fopen("/home/student/Desktop/data.bin","wb");
+	
+        for(int i = 0; i <= 100; i++){
+            int nb =rand () % 100;
+            fwrite(&nb,sizeof(int),100,F);
+            printf("%d",nb);
+        }
+
+        fclose(F);
+    }
+ ```
+### [7M] Écrire un second programme qui lit les valeurs précédentes du fichier et les affiche ?
+```C
+#include <stdio.h>
+    #include <stdlib.h>
+    #include <unistd.h>
+    #include <fcntl.h>
+
+    int main(void) {
+        FILE* F;
+        char * buff[128];
+        F = fopen("/home/student/Desktop/data.bin","rb");
+
+        for(int i = 0; i < 100 ; i++){
+            fread(&buff, sizeof(char), strlen(buff), F);
+            printf("buff:%lx\n",&buff[i]);
+        }
+
+        fclose(F);
+    }
+ ```
 ## 8- Fichiers séquentiels et fichiers a accès direct
 ### [8A] Écrivez un programme qui enregistre les valeurs de 10 a 30 dans un fichier binaire.
 ### [8B] Votre programme doit ensuite relire les données stockées a raison d’une valeur sur trois (vous devez utiliser lseek)
 ### [8C] Maintenant votre programme doit, en plus, lire la 5ieme valeur enregistrée dans le fichier.
 
+```C
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+#include <fcntl.h>
+
+int main(int argc, char **argv)
+{
+    char *file = "data.bin";
+    int ret;
+
+    int fd = open(file, O_RDWR | O_CREAT, 0666);
+
+    for (int i = 10; i < 30; i++)
+    {
+        write(fd, &i, sizeof(int));
+    }
+
+    lseek(fd, 0L, SEEK_SET);
+
+    for (int i = 0; i <= 20; i++)
+    {
+    	if(i%3 == 0){
+		read(fd, &ret, sizeof(int));
+		printf("valeur: %d\n", ret);
+		lseek(fd, 2 * sizeof(int), SEEK_CUR);
+	}
+    }
+
+    lseek(fd, 0L, SEEK_SET);
+    lseek(fd, 4 * sizeof(int), SEEK_CUR);
+
+    read(fd, &ret, sizeof(int));
+    printf("5 ème valeur : %d\n", ret);
+
+    close(fd);
+}
+```
 ## 9-Sauvegarde d'une structure
 ### [9A] Créez un tableau de 4 « Personne »
 ### [9B] Affichez les données stockées dans les structures (nom, age et poids de chaque « Personne »)
 ### [9C] Créez une fonction qui sauvegarde le contenu du tableau dans un fichier binaire.
 ### [9D] Créez une fonction qui lit les données du fichier précédent et les affiche au fur et a mesure de la lecture. Vous devez bien sur retrouver les données qui étaient stockées dans les structures.
+```C
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <string.h>
+
+typedef struct Personne Personne;
+struct Personne {
+	char nom[20];
+	int age;
+	float taille;
+};
+
+void saveTab(Personne *t) {
+	FILE *F = fopen("/home/student/Desktop/data.bin", "wb");
+	for (int i = 0; i < 4; ++i) {
+		fwrite(&t[i], sizeof(Personne), 4, F);
+	}
+	fclose(F);
+}
+
+void main() {
+	Personne p1 = {"Axel1\0",21,1.79}, p2 = {"Axel2",21,1.79}, p3 = {"Axel3",21,1.79}, p4 = {"Axel4",21,1.79};
+
+	Personne tabP[4] = { p1, p2, p3, p4 };
+
+	saveTab(tabP);
+}
+```
 ### [9E] Créez une fonction qui lit les données du fichier précédents et les stocke dans un tableau de « Personne »
 ### [9F] Même exercice que précédemment, mais cette fois avec la structure suivante :
